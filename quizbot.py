@@ -139,5 +139,5 @@ class QuizBot:
 
 if __name__ == '__main__':
     # Replace YOUR_TOKEN with your Telegram Bot API token
-    bot = QuizBot(YOUR_TOKEN)
+    bot = QuizBot('6135605220:AAGID1bjlBbWbV0DckTLW5WX0C_tOtWj_K8')
     bot.run()
