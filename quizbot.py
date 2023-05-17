@@ -4,8 +4,9 @@ import random
 import telegram
 import os
 import logging
+import time
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, JobQueue, JobContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -40,22 +41,18 @@ class QuizBot:
 
     def answer(self, update, context):
         query = update.callback_query
-        user_answer = query.data
-        correct_answer = context.chat_data['questions'][context.chat_data['question_index']]['correct_answer']
-        user_name = update.effective_user.first_name
+        query.answer()
 
-        if user_answer == correct_answer:
-            context.chat_data['score'] += 10
-            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                                       text='✅ Yes, correct!\n\n🏅 {} +10 points'.format(user_name))
+        correct_answer = context.chat_data['questions'][context.chat_data['question_index']]['correct_answer']
+        if query.data == correct_answer:
+            context.chat_data['score'] += 1
+            query.edit_message_text(text="Correct! 🎉 Your score: {}".format(context.chat_data['score']))
         else:
-            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                                       text='❌ Incorrect. The correct answer is {}.'.format(correct_answer))
+            query.edit_message_text(text="Sorry, that's incorrect. 😞")
 
         context.chat_data['question_index'] += 1
         if context.chat_data['question_index'] < len(context.chat_data['questions']):
-            job_queue = self.updater.job_queue
-            job_queue.run_once(self.ask_next_question, 10, context={'update': update, 'chat_data': context.chat_data})
+            self.next_question(update, context)
         else:
             self.end_quiz(update, context)
 
@@ -65,66 +62,50 @@ class QuizBot:
         answer_options_text = '\n'.join(['{}. {}'.format(chr(i+65), option) for i, option in enumerate(answer_options)])
         keyboard = [[InlineKeyboardButton(answer_option, callback_data=answer_option) for answer_option in answer_options]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        self.bot.send_message(chat_id=update.effective_chat.id, text=question + '\n' + answer_options_text, reply_markup=reply_markup)
+        message = self.bot.send_message(chat_id=update.effective_chat.id, text=question + '\n' + answer_options_text, reply_markup=reply_markup)
 
-    def end_quiz(self, update, context):
-        score = context.chat_data['score']
-        num_questions = len(context.chat_data['questions'])
-        self.bot.send_message(chat_id=update.effective_chat.id, text='Quiz complete! You scored {}/{}.\nUse the /highscores command to see the top scores.'.format(score, num_questions))
-        self.save_score(update.effective_user.id, score)
+        # Wait for 20 seconds
+        time.sleep(20)
 
-    def ask_next_question(self, context: JobContext):
-        update = context.job.context['update']
-        chat_data = context.job.context['chat_data']
-        self.ask_question(update, chat_data)
+        # End the question
+        self.end_question(update, context, message)
 
-    def score(self, update, context):
-        score = context.chat_data.get('score', 0)
-        self.bot.send_message(chat_id=update.effective_chat.id, text='Your current score is {}.'.format(score))
+    def end_question(self, update, context, message):
+        # Edit the message text to "time out"
+        self.bot.edit_message_text(chat_id=message.chat_id, message_id=message.message_id, text='⏰ Time out!')
 
-    def highscores(self, update, context):
-        highscores = self.get_highscores()
-        sorted_highscores = sorted(highscores.items(), key=operator.itemgetter(1), reverse=True)
-        highscores_text = '\n'.join(['{}: {}'.format(user_id, score) for user_id, score in sorted_highscores])
-        self.bot.send_message(chat_id=update.effective_chat.id, text='Highscores:\n{}'.format(highscores_text))
-
-    def leaderboard(self, update, context):
-        highscores = self.get_highscores()
-        sorted_highscores = sorted(highscores.items(), key=operator.itemgetter(1), reverse=True)
-        top_scores = sorted_highscores[:10]
-        leaderboard_text = '\n'.join(['{}. {}: {}'.format(i + 1, user_id, score) for i, (user_id, score) in enumerate(top_scores)])
-        self.bot.send_message(chat_id=update.effective_chat.id, text='🏆 Leaderboard:\n{}'.format(leaderboard_text))
-
-    def end(self, update, context):
-        score = context.chat_data.get('score', 0)
-        self.bot.send_message(chat_id=update.effective_chat.id, text='Quiz ended. Your final score is {}.'.format(score))
-        self.save_score(update.effective_user.id, score)
-
-    def next_question(self, update, context):
+        # Move to the next question
         context.chat_data['question_index'] += 1
         if context.chat_data['question_index'] < len(context.chat_data['questions']):
             self.ask_question(update, context)
         else:
             self.end_quiz(update, context)
 
+    def next_question(self, update, context):
+        self.ask_question(update, context)
+
+    def score(self, update, context):
+        update.message.reply_text("Your current score is: {}".format(context.chat_data['score']))
+
+    def highscores(self, update, context):
+        # Implement highscore functionality here
+        pass
+
+    def leaderboard(self, update, context):
+        # Implement leaderboard functionality here
+        pass
+
+    def end_quiz(self, update, context):
+        update.effective_message.reply_text("Congratulations! You've completed the quiz. Your final score is {}.".format(context.chat_data['score']))
+
+    def end(self, update, context):
+        self.end_quiz(update, context)
+
     def shuffle_questions(self, questions):
         shuffled_questions = random.sample(questions, len(questions))
         for question in shuffled_questions:
             random.shuffle(question['answer_options'])
         return shuffled_questions
-
-    def save_score(self, user_id, score):
-        highscores = self.get_highscores()
-        if user_id not in highscores or score > highscores[user_id]:
-            highscores[user_id] = score
-            with open('highscores.json', 'w') as f:
-                json.dump(highscores, f)
-
-    def get_highscores(self):
-        if os.path.exists('highscores.json'):
-            with open('highscores.json', 'r') as f:
-                return json.load(f)
-        return {}
 
     def run(self):
         self.updater.start_polling()
@@ -133,7 +114,7 @@ class QuizBot:
 
 if __name__ == '__main__':
     token = os.environ.get('TELEGRAM_BOT_TOKEN')
-    if token:
+   if token:
         quiz_bot = QuizBot(token)
         quiz_bot.run()
     else:
