@@ -1,0 +1,37 @@
+# Python-related files
+
+*.pyc
+
+__pycache__/
+
+*.pyo
+
+*.pyd
+
+*.pyc.*
+
+*.pyo.*
+
+*.pyd.*
+
+*.egg-info/
+
+dist/
+
+build/
+
+*.egg
+
+# IDE-related files
+
+.idea/
+
+.vscode/
+
+# Other files
+
+*.log
+
+*.json
+
+*.txt
