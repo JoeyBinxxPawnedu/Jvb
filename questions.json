@@ -1,0 +1,122 @@
+[
+    {
+        "question": "My friend won a prize in a/an............competition. He wrote a good poem",
+        "answer_options": ["article", "poetry", "play", "novel"],
+        "correct_answer": "poetry"
+    },
+    {
+        "question": "The sun is at its strongest at..........",
+        "answer_options": ["dawn", "midnight", "midday", "sunset"],
+        "correct_answer": "midday"
+    },
+    {
+        "question": "It is.........to offer your guests something to drink",
+        "answer_options": ["secretive", "customary", "poisonous", "shy"],
+        "correct_answer": "customary"
+    },
+    {
+        "question": "A/An.......is a person who represents his country all over the world",
+        "answer_options": ["diplomat", "journalist", "actor", "musician"],
+        "correct_answer": "diplomat"
+    },
+    {
+        "question": "I really admire Charles Dickens as a novelist as his writing..........is unique",
+        "answer_options": ["sailor", "journalist", "style", "conduct"],
+        "correct_answer": "style"
+    },
+    {
+        "question": "Yehia Haqqi graduated in law and worked for a short time as a.........",
+        "answer_options": ["journalist", "lawyer", "sailor", "diplomat"],
+        "correct_answer": "diplomat"
+    },
+    {
+        "question": "Early black and white photos show people in..........clothes",
+        "answer_options": ["most recent", "modern", "up-to-date", "old-fashioned"],
+        "correct_answer": "old-fashioned"
+    },
+    {
+        "question": "London has a/an..........of 557 mm of rain each year",
+        "answer_options": ["average", "number", "ability", "water"],
+        "correct_answer": "average"
+    },
+    {
+        "question": "The system of rules that people in a country or place must obey is called...........",
+        "answer_options": ["law", "custom", "convention", "tradition"],
+        "correct_answer": "law"
+    },
+    {
+        "question": "I sent my friend an email with photo as a/an..........",
+        "answer_options": ["attraction", "attack", "challenge", "attachment"],
+        "correct_answer": "attachment"
+    },
+    {
+        "question": "Hamdi is..........and cannot walk",
+        "answer_options": ["deaf", "blend", "unable", "disabled"],
+        "correct_answer": "disabled"
+    },
+    {
+        "question": "...........is 12 o'clock in the day, but midnight is 12 o'clock at night",
+        "answer_options": ["Morning", "Night", "Midday", "Noon"],
+        "correct_answer": "Midday"
+    },
+    {
+        "question": "My father does the same things every day. He likes to have........",
+        "answer_options": ["root", "work", "routine", "way"],
+        "correct_answer": "routine"
+    },
+    {
+        "question": "Yehia Haqqi came from a poor..........of Cairo",
+        "answer_options": ["district", "country", "city", "capital"],
+        "correct_answer": "district"
+    },
+    {
+        "question": "My brother wants to be a lawyer when he graduates. So, he's studying..........at university",
+        "answer_options": ["maths", "law", "literature", "medicine"],
+        "correct_answer": "law"
+    },
+    {
+        "question": "Magdi Yacoub was one of the first heart transplant..........",
+        "answer_options": ["heroes", "pioneers", "champions", "sergeants"],
+        "correct_answer": "pioneers"
+    },
+    {
+        "question": "In my grandfather's village, they still follow the same traditional.........that he used to follow when he was a boy",
+        "answer_options": ["positions", "collections", "attachments", "customs"],
+        "correct_answer": "customs"
+    },
+    {
+        "question": "Haqqi........in 1992",
+        "answer_options": ["dyed", "dead", "died", "death"],
+        "correct_answer": "died"
+    },
+    {
+        "question": "My sister loves modern clothes and buys very..........dresses",
+        "answer_options": ["fashions", "fashioning", "fashionable", "old-fashioned"],
+        "correct_answer": "fashionable"
+    },
+    {
+        "question": "My parents gave me a..........of modern short stories for my birthday",
+        "answer_options": ["collect", "collection", "collected", "collecting"],
+        "correct_answer": "collection"
+    },
+    {
+        "question": "Yehia Haqqi was an important twentieth-century.........",
+        "answer_options": ["write", "writer", "writing", "written"],
+        "correct_answer": "writer"
+    },
+    {
+        "question": "My mother has a..........that children learn best by playing games",
+        "answer_options": ["believe", "believer", "belief", "believed"],
+        "correct_answer": "belief"
+    },
+    {
+        "question": "Although Nawal has a/an............, she is very good at sports",
+        "answer_options": ["disability", "ability", "disabled", "enabled"],
+        "correct_answer": "disability"
+    },
+    {
+        "question": "My friend won a prize in a/an............competition. He wrote a good poem",
+        "answer_options": ["article", "poetry", "play", "novel"],
+        "correct_answer": "poetry"
+    }
+]
