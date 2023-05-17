@@ -131,5 +131,5 @@ class QuizBot:
 
 if __name__ == '__main__':
     # Replace YOUR_TOKEN_HERE with your actual bot token
-    bot = QuizBot(token='YOUR_TOKEN_HERE')
+    bot = QuizBot(token='6135605220:AAGID1bjlBbWbV0DckTLW5WX0C_tOtWj_K8')
     bot.run()
