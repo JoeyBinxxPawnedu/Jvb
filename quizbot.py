@@ -113,9 +113,11 @@ class QuizBot:
 
 
 if __name__ == '__main__':
-    token = os.environ.get('TELEGRAM_BOT_TOKEN')
-   if token:
+    with open("token.txt", "r") as token_file:
+        token = token_file.read().strip()
+
+    if token:
         quiz_bot = QuizBot(token)
         quiz_bot.run()
     else:
-        print("Error: TELEGRAM_BOT_TOKEN environment variable not found. Please set it and run the script again.")
+        print("Error: Token not found in token.txt. Please add your token and run the script again.")
