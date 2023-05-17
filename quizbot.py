@@ -1,9 +1,14 @@
 import json
 import operator
+import random
 import telegram
+import os
+import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
-import time
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, JobQueue, JobContext
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 class QuizBot:
     def __init__(self, token):
@@ -37,16 +42,20 @@ class QuizBot:
         query = update.callback_query
         user_answer = query.data
         correct_answer = context.chat_data['questions'][context.chat_data['question_index']]['correct_answer']
+        user_name = update.effective_user.first_name
+
         if user_answer == correct_answer:
             context.chat_data['score'] += 10
-            username = update.effective_user.username
-            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id, text='Correct, @{}!'.format(username))
+            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                                       text='✅ Yes, correct!\n\n🏅 {} +10 points'.format(user_name))
         else:
-            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id, text='Incorrect. The correct answer is {}.'.format(correct_answer))
+            self.bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                                       text='❌ Incorrect. The correct answer is {}.'.format(correct_answer))
+
         context.chat_data['question_index'] += 1
         if context.chat_data['question_index'] < len(context.chat_data['questions']):
-            time.sleep(10)
-            self.ask_question(update, context)
+            job_queue = self.updater.job_queue
+            job_queue.run_once(self.ask_next_question, 10, context={'update': update, 'chat_data': context.chat_data})
         else:
             self.end_quiz(update, context)
 
@@ -64,80 +73,68 @@ class QuizBot:
         self.bot.send_message(chat_id=update.effective_chat.id, text='Quiz complete! You scored {}/{}.\nUse the /highscores command to see the top scores.'.format(score, num_questions))
         self.save_score(update.effective_user.id, score)
 
+    def ask_next_question(self, context: JobContext):
+        update = context.job.context['update']
+        chat_data = context.job.context['chat_data']
+        self.ask_question(update, chat_data)
+
     def score(self, update, context):
-        if 'score' in context.chat_data:
-            score = context.chat_data['score']
-            num_questions = len(context.chat_data['questions'])
-            self.bot.send_message(chat_id=update.effective_chat.id, text='Your score is {}/{}'.format(score, num_questions))
-        else:
-            self.bot.send_message(chat_id=update.effective_chat.id, text='No quiz in progress.')
+        score = context.chat_data.get('score', 0)
+        self.bot.send_message(chat_id=update.effective_chat.id, text='Your current score is {}.'.format(score))
 
     def highscores(self, update, context):
-        high_scores = self.get_high_scores()
-        if len(high_scores) == 0:
-            self.bot.send_message(chat_id=update.effective_chat.id, text='No high scores yet.')
-        else:
-            high_scores_text = 'High scores:\n\n'
-            for i, high_score in enumerate(high_scores[:10]):
-                high_scores_text += '{}. {}: {}\n'.format(i+1, high_score['username'], high_score['score'])
-            self.bot.send_message(chat_id=update.effective_chat.id, text=high_scores_text)
+        highscores = self.get_highscores()
+        sorted_highscores = sorted(highscores.items(), key=operator.itemgetter(1), reverse=True)
+        highscores_text = '\n'.join(['{}: {}'.format(user_id, score) for user_id, score in sorted_highscores])
+        self.bot.send_message(chat_id=update.effective_chat.id, text='Highscores:\n{}'.format(highscores_text))
 
     def leaderboard(self, update, context):
-        high_scores = self.get_high_scores()
-        leaderboard = {}
-        for high_score in high_scores:
-            username = high_score['username']
-            score = high_score['score']
-            if username in leaderboard:
-                leaderboard[username] += score
-            else:
-                leaderboard[username] = score
-        sorted_leaderboard = sorted(leaderboard.items(), key=operator.itemgetter(1), reverse=True)
-        leaderboard_text = 'Leaderboard:\n\n'
-        for i, (username, score) in enumerate(sorted_leaderboard[:10]):
-            leaderboard_text += '{}. {}: {}\n'.format(i+1, username, score)
-        self.bot.send_message(chat_id=update.effective_chat.id, text=leaderboard_text)
+        highscores = self.get_highscores()
+        sorted_highscores = sorted(highscores.items(), key=operator.itemgetter(1), reverse=True)
+        top_scores = sorted_highscores[:10]
+        leaderboard_text = '\n'.join(['{}. {}: {}'.format(i + 1, user_id, score) for i, (user_id, score) in enumerate(top_scores)])
+        self.bot.send_message(chat_id=update.effective_chat.id, text='🏆 Leaderboard:\n{}'.format(leaderboard_text))
 
     def end(self, update, context):
-        if 'score' in context.chat_data:
-            del context.chat_data['score']
-        if 'question_index' in context.chat_data:
-            del context.chat_data['question_index']
-        if 'questions' in context.chat_data:
-            del context.chat_data['questions']
-        self.bot.send_message(chat_id=update.effective_chat.id, text='Quiz ended.')
+        score = context.chat_data.get('score', 0)
+        self.bot.send_message(chat_id=update.effective_chat.id, text='Quiz ended. Your final score is {}.'.format(score))
+        self.save_score(update.effective_user.id, score)
 
     def next_question(self, update, context):
+        context.chat_data['question_index'] += 1
         if context.chat_data['question_index'] < len(context.chat_data['questions']):
-            time.sleep(10)
             self.ask_question(update, context)
         else:
             self.end_quiz(update, context)
 
-    def get_high_scores(self):
-        try:
-            with open('high_scores.json', 'r') as f:
-                high_scores = json.load(f)
-        except FileNotFoundError:
-            high_scores = []
-        return high_scores
-
-    def save_score(self, chat_id, score):
-        username = self.bot.get_chat(chat_id).username
-        high_scores = self.get_high_scores()
-        high_scores.append({'username': username, 'score': score})
-        high_scores = sorted(high_scores, key=lambda x: x['score'], reverse=True)
-        with open('high_scores.json', 'w') as f:
-            json.dump(high_scores, f)
-
     def shuffle_questions(self, questions):
-        return sorted(questions, key=lambda x: x['question'])
+        shuffled_questions = random.sample(questions, len(questions))
+        for question in shuffled_questions:
+            random.shuffle(question['answer_options'])
+        return shuffled_questions
+
+    def save_score(self, user_id, score):
+        highscores = self.get_highscores()
+        if user_id not in highscores or score > highscores[user_id]:
+            highscores[user_id] = score
+            with open('highscores.json', 'w') as f:
+                json.dump(highscores, f)
+
+    def get_highscores(self):
+        if os.path.exists('highscores.json'):
+            with open('highscores.json', 'r') as f:
+                return json.load(f)
+        return {}
 
     def run(self):
         self.updater.start_polling()
         self.updater.idle()
 
+
 if __name__ == '__main__':
-    # Replace YOUR_TOKEN with your Telegram Bot API token
-    bot = QuizBot('6135605220:AAGID1bjlBbWbV0DckTLW5WX0C_tOtWj_K8')
-    bot.run()
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    if token:
+        quiz_bot = QuizBot(token)
+        quiz_bot.run()
+    else:
+        print("Error: TELEGRAM_BOT_TOKEN environment variable not found. Please set it and run the script again.")
